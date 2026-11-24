@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Screen Pair</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a6cff">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<style>
+:root{--bg:#eef1f4;--fg:#12161c;--mut:#5d6672;--card:#fff;--ac:#0a6cff;--acf:#fff;--bd:#cdd4dc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0f14;--fg:#e8edf3;--mut:#8b96a3;--card:#141a22;--ac:#5aa2ff;--acf:#06101e;--bd:#27313d}}
+:root[data-theme="dark"]{--bg:#0b0f14;--fg:#e8edf3;--mut:#8b96a3;--card:#141a22;--ac:#5aa2ff;--acf:#06101e;--bd:#27313d}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 "Trebuchet MS",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 20px 48px}
+h1{font-size:clamp(2rem,7vw,3.2rem);line-height:1.05;margin:0 0 12px;letter-spacing:-.02em}
+h2{margin:0 0 6px;font-size:1.3rem}
+p{margin:0 0 14px}.mut{color:var(--mut)}
+button{font:inherit;font-weight:600;padding:11px 18px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--fg);cursor:pointer}
+button.pri{background:var(--ac);color:var(--acf);border-color:var(--ac)}
+button.on{outline:2px solid var(--ac)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:26px 0}
+.big button{padding:22px;text-align:left;font-size:1.1rem;border-radius:14px}
+.big small{display:block;font-weight:400;color:var(--mut);margin-top:4px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px}
+.warn{background:var(--card);border:2px solid #d98a00;border-radius:12px;padding:12px 14px;margin:0 0 16px}
+.item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.item:last-child{border:0}.item b{flex:1}
+.item button{padding:6px 12px}
+video#pv{width:100%;max-height:260px;background:#000;border-radius:10px;margin-top:12px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;z-index:20}
+.modal .box{max-width:460px;width:100%;max-height:100%;overflow:auto}
+#qr{background:#fff;padding:12px;border-radius:10px;display:flex;justify-content:center;margin:10px 0}
+#qr img,#qr canvas{max-width:100%;height:auto!important}
+#codeShow{font:700 2rem/1 monospace;letter-spacing:.15em;text-align:center;margin:8px 0}
+input{width:100%;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--fg);padding:12px;font:1.2rem monospace;letter-spacing:.1em;margin-top:8px}
+#sv{width:100%;border-radius:10px;background:#000}
+#disp{position:fixed;inset:0;background:#000;overflow:hidden;z-index:10}
+#gv{position:absolute;object-fit:contain;background:#000}
+#lbl{position:fixed;top:12px;left:12px;background:rgba(0,0,0,.7);color:#fff;padding:6px 12px;border-radius:8px;font-size:14px;transition:opacity .5s}
+#leave{position:fixed;top:12px;right:12px;background:rgba(0,0,0,.7);color:#fff;border:0}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:40;max-width:92vw}
+input[type=checkbox]{width:auto;margin:0 8px 0 0;letter-spacing:0;vertical-align:middle}
+.ctlrow{margin:0 0 6px}
+#ctl{position:fixed;top:12px;right:92px;background:rgba(0,0,0,.7);color:#fff;border:0;z-index:15}
+#cp{position:fixed;top:60px;right:12px;z-index:15;width:min(300px,calc(100vw - 24px));max-height:calc(100vh - 72px);overflow:auto;background:rgba(20,26,34,.95);color:#e8edf3;border-radius:14px;padding:12px;display:grid;gap:8px}
+#cp button{background:#27313d;color:#e8edf3;border:0;text-align:left;padding:10px 14px}
+#cp button.on{outline:2px solid #5aa2ff}
+#cp button:disabled{opacity:.45}
+#cp .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#cp small{color:#8b96a3}
+</style></head><body>
+
+<main id="home">
+  <h1>Turn spare devices into extra screens</h1>
+  <p class="mut">One device shares its screen and sound. Other devices join by scanning the host's QR code, then show a copy of it or each take a slice of one big picture.</p>
+  <div id="warn" class="warn" hidden></div>
+  <div class="row"><button id="bInstall" hidden>Install this app on the device</button></div>
+  <div class="big">
+    <button class="pri" id="bHost">Host a screen<small>Open this on the computer you want to share</small></button>
+    <button id="bJoin">Join as a screen<small>Open this on each device you want to use as a display</small></button>
+  </div>
+  <p class="mut">Both devices need internet briefly to connect. After that, the video and sound go directly between the devices. Best when they're on the same Wi‑Fi.</p>
+</main>
+
+<main id="host" hidden>
+  <h1>Host</h1>
+  <p class="mut">Tap “Add a screen” and let the other device scan the QR code. When sharing, tick <b>Share audio</b> so joiners can hear your sound.</p>
+  <div class="row"><button class="pri" id="bAdd">Add a screen</button></div>
+  <label class="ctlrow"><input type="checkbox" id="allow" checked>Let joined screens control this share (pause, sound, layout, change what’s shared)</label>
+  <div class="box">
+    <h2>Layout</h2>
+    <div class="row" id="modes">
+      <button data-m="mirror" class="on">Mirror</button>
+      <button data-m="row">Side by side</button>
+      <button data-m="col">Stacked</button>
+      <button data-m="grid">Grid</button>
+    </div>
+    <h2>Connected screens</h2>
+    <div id="list"></div>
+    <video id="pv" autoplay muted playsinline></video>
+  </div>
+</main>
+
+<div id="chdlg" class="modal" hidden style="z-index:25"><div class="box">
+  <h2>Change what’s shared?</h2><p id="chM" class="mut"></p>
+  <div class="row"><button id="chGo" class="pri">Choose what to share</button><button id="chNo">Not now</button></div>
+</div></div>
+
+<div id="hdlg" class="modal" hidden><div class="box">
+  <h2>Scan to join</h2>
+  <p class="mut">On the other device, open this page, tap “Join as a screen” and scan this code.</p>
+  <div id="qr"></div>
+  <p class="mut" style="margin:0">Or type this code:</p>
+  <div id="codeShow"></div>
+  <div class="row"><button id="hX" class="pri">Done</button></div>
+</div></div>
+
+<div id="jdlg" class="modal" hidden><div class="box">
+  <h2>Join as a screen</h2>
+  <p class="mut">Scan the host's QR code.</p>
+  <div class="row">
+    <button id="bScan" class="pri">Scan QR code</button>
+    <button id="bPhoto">Take a photo of the QR</button>
+  </div>
+  <input id="photo" type="file" accept="image/*" capture="environment" hidden>
+  <p class="mut" style="margin-top:14px">No camera? Type the host's code:</p>
+  <input id="inp" placeholder="e.g. k7m2xq" autocapitalize="off" autocomplete="off" spellcheck="false">
+  <div class="row"><button id="bGo">Connect</button><button id="jX">Back</button></div>
+</div></div>
+
+<div id="scan" class="modal" hidden style="z-index:30"><div class="box">
+  <h2>Point the camera at the code</h2><video id="sv" playsinline muted></video>
+  <div class="row"><button id="sx">Cancel</button></div>
+</div></div>
+
+<div id="disp" hidden>
+  <video id="gv" autoplay playsinline></video>
+  <div id="lbl"></div>
+  <button id="ctl">Controls</button>
+  <button id="leave">Leave</button>
+  <div id="cp" hidden>
+    <small>Control what the host shares</small>
+    <button id="cPause">Pause picture</button>
+    <button id="cMute">Mute host sound</button>
+    <div class="seg" id="cLay">
+      <button data-l="mirror">Mirror</button><button data-l="row">Side by side</button>
+      <button data-l="col">Stacked</button><button data-l="grid">Grid</button>
+    </div>
+    <button id="cChange">Ask host to change what’s shared</button>
+    <button id="cSnd">Sound on this device: on</button>
+    <small id="cNote"></small>
+  </div>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+const $=s=>document.querySelector(s),show=(s,on=true)=>{$(s).hidden=!on};
+let stream,peer,peers=[],mode='mirror',hostId=null,jpeer=null,jconn=null,last=null,tt;
+const toast=t=>{const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,5000)};
+
+/* ---------- Compatibility ---------- */
+const inFrame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+const canShare=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
+const canCam=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+(function(){
+  const m=[];
+  if(!window.isSecureContext)m.push('This page is not in a secure context. Open it over https:// or from localhost; screen sharing and the camera are blocked otherwise.');
+  if(inFrame)m.push('This page is embedded inside another page, so browsers block screen sharing and the camera. Open it in its own tab.');
+  if(typeof Peer==='undefined')m.push('Could not load the connection library. Check your internet connection and reload.');
+  if(m.length){const w=$('#warn');w.innerHTML='<b>Heads up</b><br>'+m.join('<br>');w.hidden=false}
+  if(!canCam){show('#bScan',false);$('#bPhoto').classList.add('pri')}
+})();
+
+const rid=()=>{const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<6;i++)s+=c[Math.floor(Math.random()*c.length)];return s};
+const PREFIX='screenpair-';
+
+/* ---------- Host ---------- */
+$('#bHost').onclick=()=>{show('#home',false);show('#host')};
+let paused=false,hmuted=false;
+const allowCtl=()=>$('#allow').checked;
+function hookEnd(s){s.getVideoTracks()[0].onended=()=>{stream=null;$('#pv').srcObject=null;peers.forEach(p=>{try{p.conn.close();p.call&&p.call.close()}catch(e){}});peers=[];render()}}
+function sendState(){const m={state:{paused,muted:hmuted,ctl:allowCtl(),mode}};peers.forEach(p=>{try{p.conn.send(m)}catch(e){}})}
+function applyTracks(){if(!stream)return;stream.getVideoTracks().forEach(t=>t.enabled=!paused);stream.getAudioTracks().forEach(t=>t.enabled=!hmuted)}
+function modeUI(){document.querySelectorAll('#modes button').forEach(x=>x.classList.toggle('on',x.dataset.m===mode))}
+function onCmd(e,d){
+  if(!d||!d.cmd||!allowCtl())return;
+  if(d.cmd==='pause')paused=!!d.v;
+  else if(d.cmd==='mute')hmuted=!!d.v;
+  else if(d.cmd==='layout'&&['mirror','row','col','grid'].includes(d.v)){mode=d.v;modeUI();send()}
+  else if(d.cmd==='change'){$('#chM').textContent='Screen '+(peers.indexOf(e)+1)+' asks you to choose something else to share.';show('#chdlg');return}
+  applyTracks();sendState();
+}
+$('#allow').onchange=sendState;
+$('#chNo').onclick=()=>show('#chdlg',false);
+$('#chGo').onclick=async()=>{
+  show('#chdlg',false);
+  let s;try{s=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true})}catch(e){return toast(shareError(e))}
+  const old=stream,vt=s.getVideoTracks()[0],at=s.getAudioTracks()[0]||null;
+  peers.forEach(p=>{const pc=p.call&&p.call.peerConnection;if(!pc)return;pc.getSenders().forEach(sn=>{const k=sn.track&&sn.track.kind;if(k==='video')sn.replaceTrack(vt).catch(()=>{});else if(k==='audio')sn.replaceTrack(at).catch(()=>{})})});
+  stream=s;$('#pv').srcObject=s;hookEnd(s);applyTracks();
+  if(old)old.getTracks().forEach(t=>{t.onended=null;t.stop()});
+  if(!at)toast('No sound in the new share. Tick “Share audio” next time.');
+};
+async function share(){
+  if(!canShare)throw Object.assign(new Error('unsupported'),{name:'NotSupportedError'});
+  try{stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true})}
+  catch(e){if(e&&(e.name==='NotAllowedError'||e.name==='AbortError'))throw e;stream=await navigator.mediaDevices.getDisplayMedia({video:true})}
+  $('#pv').srcObject=stream;
+  if(!stream.getAudioTracks().length)toast('No sound is being shared. Next time tick “Share audio” (choose a tab or the whole screen).');
+  hookEnd(stream);
+}
+function shareError(e){
+  const n=e&&e.name;
+  if(n==='NotAllowedError')return inFrame?'Screen sharing is blocked because this page is embedded. Open it in its own tab.':'Screen sharing was cancelled or blocked.';
+  if(n==='NotSupportedError'||!canShare)return 'This browser can’t capture the screen here. Use Chrome in its own tab over https://.';
+  return 'Couldn’t start screen sharing'+(n?' ('+n+')':'')+'.';
+}
+function startPeer(){
+  return new Promise((res,rej)=>{
+    if(peer&&hostId&&!peer.destroyed)return res();
+    const id=rid();
+    const p=new Peer(PREFIX+id);
+    p.on('open',()=>{peer=p;hostId=id;res()});
+    p.on('error',e=>{if(e.type==='unavailable-id'){p.destroy();startPeer().then(res,rej)}else if(!hostId)rej(e);else toast('Connection error: '+e.type)});
+    p.on('connection',conn=>{
+      conn.on('open',()=>{
+        if(!stream){conn.close();return}
+        const call=peer.call(conn.peer,stream);
+        const e={conn,call};peers.push(e);
+        show('#hdlg',false);render();send();sendState();toast('Screen connected');
+        const gone=()=>{if(peers.includes(e)){peers=peers.filter(x=>x!==e);render();send()}};
+        conn.on('close',gone);conn.on('error',gone);call.on('close',gone);conn.on('data',d=>onCmd(e,d));
+      });
+    });
+    p.on('disconnected',()=>{try{p.reconnect()}catch(e){}});
+  });
+}
+$('#bAdd').onclick=async()=>{
+  try{if(!stream)await share()}catch(e){console.error(e);return toast(shareError(e))}
+  try{await startPeer()}catch(e){console.error(e);return toast('Couldn’t reach the connection service. Check your internet and try again.')}
+  const link=/^https?:$/.test(location.protocol)?location.origin+location.pathname+'#'+hostId:hostId;
+  const q=$('#qr');q.innerHTML='';
+  try{new QRCode(q,{text:link,width:320,height:320,correctLevel:QRCode.CorrectLevel.M})}catch(e){q.textContent='Use the code below.'}
+  $('#codeShow').textContent=hostId;show('#hdlg');
+};
+$('#hX').onclick=()=>show('#hdlg',false);
+document.querySelectorAll('#modes button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;modeUI();send();sendState()});
+function cell(n,i){
+  if(mode==='mirror')return{c:1,r:1,x:0,y:0,i,n};
+  let c=1,r=1;if(mode==='row')c=n;else if(mode==='col')r=n;else{c=Math.ceil(Math.sqrt(n));r=Math.ceil(n/c)}
+  return{c,r,x:i%c,y:Math.floor(i/c),i,n};
+}
+function send(){peers.forEach((p,i)=>{try{p.conn.send(cell(peers.length,i))}catch(e){}})}
+function mv(i,d){const j=i+d;if(j<0||j>=peers.length)return;[peers[i],peers[j]]=[peers[j],peers[i]];render();send()}
+function render(){
+  const l=$('#list');l.innerHTML='';
+  if(!peers.length){l.innerHTML='<p class="mut">No screens yet. Tap “Add a screen”.</p>';return}
+  peers.forEach((p,i)=>{
+    const d=document.createElement('div');d.className='item';d.innerHTML='<b>Screen '+(i+1)+'</b>';
+    [['‹',()=>mv(i,-1),'Move earlier'],['›',()=>mv(i,1),'Move later'],['Remove',()=>{try{p.conn.close();p.call&&p.call.close()}catch(e){}},'Remove']].forEach(([t,f,a])=>{const b=document.createElement('button');b.textContent=t;b.title=a;b.setAttribute('aria-label',a);b.onclick=f;d.appendChild(b)});
+    l.appendChild(d);
+  });
+}
+render();
+
+/* ---------- Joiner ---------- */
+const clean=t=>{t=(t||'').trim();const h=t.lastIndexOf('#');if(h>=0)t=t.slice(h+1);return t.replace(PREFIX,'').toLowerCase().replace(/[^a-z0-9]/g,'')};
+$('#bJoin').onclick=()=>{show('#home',false);show('#jdlg')};
+$('#jX').onclick=()=>{show('#jdlg',false);show('#home')};
+$('#bGo').onclick=()=>join($('#inp').value);
+function camError(e){
+  const n=e&&e.name;
+  if(n==='NotAllowedError'||n==='SecurityError'){
+    if(inFrame||!window.isSecureContext)return 'The camera is blocked on this page (it must be opened in its own tab over https://). Use “Take a photo of the QR” or type the code.';
+    return 'Camera permission is off. Tap the lock/camera icon in the address bar (or phone Settings › Browser › Camera), choose Allow, then tap Scan again. Or use “Take a photo of the QR”.';
+  }
+  if(n==='NotFoundError'||n==='OverconstrainedError')return 'No camera found. Use “Take a photo of the QR” or type the code.';
+  if(n==='NotReadableError')return 'The camera is busy in another app. Close it and try again, or use “Take a photo of the QR”.';
+  return 'Camera unavailable'+(n?' ('+n+')':'')+'. Use “Take a photo of the QR” or type the code.';
+}
+$('#bScan').onclick=()=>scan().then(join).catch(e=>{if(e!=='cancelled')toast(camError(e))});
+
+/* Fallback that needs no camera permission: phone's own camera app takes a photo, we read the QR from it */
+$('#bPhoto').onclick=()=>{$('#photo').value='';$('#photo').click()};
+$('#photo').onchange=async()=>{
+  const f=$('#photo').files[0];if(!f)return;
+  try{
+    const url=URL.createObjectURL(f),img=new Image();
+    await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=url});
+    let found=null;
+    for(const max of [1400,900,600,2000]){
+      const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+      const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+      const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,c.width,c.height);
+      const r=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height,{inversionAttempts:'attemptBoth'});
+      if(r&&r.data){found=r.data;break}
+    }
+    URL.revokeObjectURL(url);
+    if(found)join(found);else toast('Couldn’t find a QR code in that photo. Get closer, fill the frame with the code, and try again.');
+  }catch(e){toast('Couldn’t read that photo. Try again or type the code.')}
+};
+
+function scan(){return new Promise(async(res,rej)=>{
+  if(!canCam)return rej({name:'SecurityError'});
+  let s;
+  try{s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})}
+  catch(e){
+    if(e&&e.name==='NotAllowedError')return rej(e);
+    try{s=await navigator.mediaDevices.getUserMedia({video:true,audio:false})}catch(e2){return rej(e2)}
+  }
+  const v=$('#sv');v.setAttribute('playsinline','');v.setAttribute('muted','');v.muted=true;v.srcObject=s;show('#scan');
+  try{await v.play()}catch(e){}
+  const c=document.createElement('canvas'),x=c.getContext('2d',{willReadFrequently:true});let live=true;
+  const stop=()=>{live=false;s.getTracks().forEach(t=>t.stop());show('#scan',false)};
+  $('#sx').onclick=()=>{stop();rej('cancelled')};
+  (function tick(){if(!live)return;
+    if(v.videoWidth){c.width=v.videoWidth;c.height=v.videoHeight;x.drawImage(v,0,0);
+      const k=jsQR(x.getImageData(0,0,c.width,c.height).data,c.width,c.height);
+      if(k&&k.data){stop();return res(k.data)}}
+    requestAnimationFrame(tick)})();
+})}
+
+function join(raw){
+  const id=clean(raw);
+  if(!id)return toast('Scan or type the host’s code first');
+  if(typeof Peer==='undefined')return toast('Connection library didn’t load. Check internet and reload.');
+  toast('Connecting…');
+  if(jpeer){try{jpeer.destroy()}catch(e){}}
+  const p=jpeer=new Peer();
+  const fail=m=>{toast(m);show('#disp',false);show('#jdlg')};
+  const timer=setTimeout(()=>{if(!jconn||!jconn.open)fail('Couldn’t reach the host. Check the code and that both devices are online.')},15000);
+  p.on('error',e=>{clearTimeout(timer);fail(e.type==='peer-unavailable'?'Host not found. Check the code and make sure the host is ready.':'Connection error: '+e.type)});
+  p.on('call',call=>{
+    call.answer();
+    call.on('stream',s=>{
+      const v=$('#gv');v.srcObject=s;v.muted=false;
+      v.play().catch(()=>{v.muted=true;v.play().catch(()=>{});toast('Tap the screen to turn sound on')});
+      show('#jdlg',false);show('#disp');
+    });
+    call.on('close',leave);
+  });
+  p.on('open',()=>{
+    const conn=jconn=p.connect(PREFIX+id,{reliable:true});
+    conn.on('data',onHostMsg);
+    conn.on('open',()=>clearTimeout(timer));
+    conn.on('close',leave);
+  });
+}
+let hs={paused:false,muted:false,ctl:true,mode:'mirror'};
+function onHostMsg(d){if(d&&d.state){hs=d.state;updPanel()}else if(d&&d.c)applyLayout(d)}
+function cmd(c,v){try{jconn&&jconn.send({cmd:c,v})}catch(e){toast('Not connected')}}
+function updPanel(){
+  $('#cPause').textContent=hs.paused?'Resume picture':'Pause picture';
+  $('#cMute').textContent=hs.muted?'Unmute host sound':'Mute host sound';
+  document.querySelectorAll('#cLay button').forEach(b=>b.classList.toggle('on',b.dataset.l===hs.mode));
+  ['#cPause','#cMute','#cChange'].forEach(x=>$(x).disabled=!hs.ctl);
+  document.querySelectorAll('#cLay button').forEach(b=>b.disabled=!hs.ctl);
+  $('#cNote').textContent=hs.ctl?'':'The host has turned controls off.';
+  $('#cSnd').textContent='Sound on this device: '+($('#gv').muted?'off':'on');
+}
+$('#ctl').onclick=()=>{updPanel();show('#cp',$('#cp').hidden)};
+$('#cPause').onclick=()=>cmd('pause',!hs.paused);
+$('#cMute').onclick=()=>cmd('mute',!hs.muted);
+$('#cChange').onclick=()=>{cmd('change');toast('Asked the host to choose something else to share')};
+document.querySelectorAll('#cLay button').forEach(b=>b.onclick=()=>cmd('layout',b.dataset.l));
+$('#cSnd').onclick=()=>{const v=$('#gv');v.muted=!v.muted;if(!v.muted)v.play().catch(()=>{});updPanel()};
+function leave(){show('#cp',false);
+  show('#disp',false);show('#jdlg',false);show('#home');
+  if(document.fullscreenElement)document.exitFullscreen();
+  const v=$('#gv');v.srcObject=null;
+  if(jpeer){try{jpeer.destroy()}catch(e){}jpeer=null;jconn=null}
+}
+function applyLayout(l){
+  last=l;const v=$('#gv'),W=innerWidth,H=innerHeight;
+  v.style.width=l.c*W+'px';v.style.height=l.r*H+'px';v.style.left=-l.x*W+'px';v.style.top=-l.y*H+'px';
+  const b=$('#lbl');b.textContent='Screen '+(l.i+1)+' of '+l.n;b.style.opacity=1;setTimeout(()=>b.style.opacity=0,3000);
+}
+addEventListener('resize',()=>last&&applyLayout(last));
+$('#disp').onclick=e=>{
+  if(e.target.closest('#cp,#ctl,#leave'))return;
+  const v=$('#gv');if(v.muted){v.muted=false;v.play().catch(()=>{})}
+  document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.().catch(()=>{});
+};
+$('#leave').onclick=leave;
+
+/* ---------- Install + offline ---------- */
+let installEv=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEv=e;show('#bInstall')});
+$('#bInstall').onclick=async()=>{if(!installEv)return;installEv.prompt();await installEv.userChoice;installEv=null;show('#bInstall',false)};
+addEventListener('appinstalled',()=>{show('#bInstall',false);toast('Installed')});
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+
+/* Opening a scanned link (#code) goes straight to joining */
+if(location.hash.length>1){show('#home',false);show('#jdlg');$('#inp').value=clean(location.hash);}
+</script></body></html>
